@@ -1,29 +1,30 @@
-IFNDEF PSEUDO_OOP_VECTOR_INC
-PSEUDO_OOP_VECTOR_INC equ 1
+IFNDEF MASM_STL_VECTOR_INC
+MASM_STL_VECTOR_INC equ 1
 
+include <Core/Types.inc>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                TYPES                ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Vector STRUCT
-    pData DWORD ?
-    dwSize DWORD ?
-    dwCapacity DWORD ?
+    pData elem_t ?
+    dwSize size_t ?
+    dwCapacity capacity_t ?
     pVTable DWORD ? 
 Vector ENDS
 
-Vector_get_at_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
+Vector_get_at_t TYPEDEF PROTO STDCALL : ptr Vector, : index_t
 Vector_get_data_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_get_size_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_empty_t TYPEDEF PROTO STDCALL : ptr Vector
-Vector_resize_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
-Vector_reserve_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
+Vector_resize_t TYPEDEF PROTO STDCALL : ptr Vector, : size_t
+Vector_reserve_t TYPEDEF PROTO STDCALL : ptr Vector, : capacity_t
 Vector_capacity_t TYPEDEF PROTO STDCALL : ptr Vector
 Vector_clear_t TYPEDEF PROTO STDCALL : ptr Vector
-Vector_insert_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD, : DWORD
-Vector_erase_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
-Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, : DWORD
+Vector_insert_t TYPEDEF PROTO STDCALL : ptr Vector, : index_t, : elem_t
+Vector_erase_t TYPEDEF PROTO STDCALL : ptr Vector, : index_t
+Vector_push_back_t TYPEDEF PROTO STDCALL : ptr Vector, : elem_t
 Vector_is_eq_t TYPEDEF PROTO STDCALL : ptr Vector, : ptr Vector
 
 VectorVTable STRUCT
@@ -47,7 +48,7 @@ VectorVTable ENDS
 
 Vector_New_Empty PROTO
 
-Vector_New_Filled PROTO dwSize: DWORD, dwData: DWORD
+Vector_New_Filled PROTO dwSize: size_t, dwData: elem_t
 
 Vector_New_Copy PROTO pVec: ptr Vector
 

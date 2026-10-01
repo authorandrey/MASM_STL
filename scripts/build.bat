@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-set "MASM_HOME=C:\masm32"
-set "ML_EXE=%MASM_HOME%\bin\ml.exe"
-set "LINK_EXE=%MASM_HOME%\bin\link.exe"
+set "EXE_HOME=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx86\x86"
+set "ML_EXE=%EXE_HOME%\ml.exe"
+set "LINK_EXE=%EXE_HOME%\link.exe"
 
 set "SRC=src"
 set "OBJ=obj"
@@ -57,7 +57,7 @@ exit /b 0
 set "FULL=%~1"
 for %%F in ("%FULL%") do set "NAME=%%~nF"
 echo [%NAME%] %FULL%
-"%ML_EXE%" /c /coff /nologo /Fo"%OBJ%\%NAME%.obj" "%FULL%"
+"%ML_EXE%" /c /coff /nologo /I inc /Fo"%OBJ%\%NAME%.obj" "%FULL%"
 if errorlevel 1 (
     echo [ERROR] ml %NAME%
     exit /b 1

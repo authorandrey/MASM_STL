@@ -1,0 +1,6 @@
+# Ignore all the junction-points generated for compilation purposes
+inc/*/Core/
+inc/*/Foundation/
+inc/*/Containers/
+inc/*/Algorithms/
+inc/*/String/

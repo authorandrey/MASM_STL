@@ -3,12 +3,11 @@
 option casemap:none
 include \masm32\include\msvcrt.inc
 includelib \masm32\lib\msvcrt.lib
-include .\inc\Containers\Vector.inc
+include Containers\Vector.inc
 
 .data
     PUBLIC Vector_vt
     Vector_vt VectorVTable <Vector__get_at, Vector__get_data, Vector__get_size, Vector__empty, Vector__resize, Vector__reserve, Vector__capacity, Vector__clear, Vector__insert, Vector__erase, Vector__push_back, Vector__is_eq>
-    VECTOR_MAX_SIZE DWORD 0FFFFFFFFh
 
 .code
 
@@ -16,11 +15,11 @@ include .\inc\Containers\Vector.inc
 ;; Private methods with private functions ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-_Vector__calculate_growth PROC uses ebx ecx edx, pThis: ptr Vector, dwNewSize: DWORD
+_Vector__calculate_growth PROC uses ebx ecx edx, pThis: ptr Vector, dwNewSize: size_t
     mov ebx, pThis
     assume ebx: ptr Vector
 
-    mov ecx, VECTOR_MAX_SIZE
+    mov ecx, STL_MAX_SIZE
     mov edx, [ebx].dwCapacity
     shr edx, 1
     add edx, [ebx].dwCapacity
@@ -41,7 +40,7 @@ _Vector__calculate_growth PROC uses ebx ecx edx, pThis: ptr Vector, dwNewSize: D
 _Vector__calculate_growth ENDP
 
 ; Reallocates to max between NewSize and OldSize+OldSize/2
-_Vector__max_reallocate PROC uses ebx ecx edx esi, pThis: ptr Vector, dwNewSize: DWORD
+_Vector__max_reallocate PROC uses ebx ecx edx esi, pThis: ptr Vector, dwNewSize: size_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
@@ -51,7 +50,7 @@ _Vector__max_reallocate PROC uses ebx ecx edx esi, pThis: ptr Vector, dwNewSize:
     invoke _Vector__calculate_growth, edx, ecx
     mov esi, eax
     mov ecx, esi
-    imul ecx, (sizeof DWORD)
+    imul ecx, STL_ELEM_SIZE
     ; eax := pointer ot new data
     invoke crt_realloc, [ebx].pData, ecx
     
@@ -65,7 +64,7 @@ _Vector__max_reallocate PROC uses ebx ecx edx esi, pThis: ptr Vector, dwNewSize:
     ret
 _Vector__max_reallocate ENDP
 
-_Vector__fill PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
+_Vector__fill PROC uses ebx ecx edx, pThis: ptr Vector, dwData: elem_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
@@ -78,7 +77,7 @@ _Vector__fill PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
         dec ecx
         mov edx, [ebx].pData
         mov eax, dwData
-        mov DWORD ptr [edx + ecx * (sizeof DWORD)], eax
+        mov DWORD ptr [edx + ecx * STL_ELEM_SIZE], eax
     .UNTIL ecx == 0
     
     assume ebx:nothing
@@ -105,13 +104,13 @@ _Vector__constructor_base ENDP
 ;; Public methods with private functions  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Vector__get_at PROC uses ebx ecx edx, pThis: ptr Vector, index: DWORD
+Vector__get_at PROC uses ebx ecx edx, pThis: ptr Vector, index: index_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
     mov edx, [ebx].pData
     mov ecx, index
-    mov eax, [edx + ecx * (sizeof DWORD)]
+    mov eax, [edx + ecx * STL_ELEM_SIZE]
     
     assume ebx:nothing
     ret
@@ -139,14 +138,15 @@ Vector__get_size ENDP
 
 Vector__empty PROC pThis: ptr Vector
     invoke Vector__get_size, pThis
-    ; Convert to bool: 0 if 0, 1 elsewhere
-    .IF eax != 0
-        mov eax, 1
+    .IF eax == 0
+        mov eax, TRUE
+    .ELSE
+        mov eax, FALSE
     .ENDIF
     ret
 Vector__empty ENDP
 
-Vector__resize PROC uses ebx ecx, pThis: ptr Vector, dwSize: DWORD
+Vector__resize PROC uses ebx ecx, pThis: ptr Vector, dwSize: size_t
     mov ebx, pThis
     assume ebx: ptr Vector
     mov ecx, dwSize
@@ -169,7 +169,7 @@ Vector__resize PROC uses ebx ecx, pThis: ptr Vector, dwSize: DWORD
     ret
 Vector__resize ENDP
 
-Vector__reserve PROC uses ebx ecx, pThis: ptr Vector, dwNewCapacity: DWORD
+Vector__reserve PROC uses ebx ecx, pThis: ptr Vector, dwNewCapacity: capacity_t
     mov ebx, pThis
     assume ebx: ptr Vector
     mov ecx, dwNewCapacity
@@ -203,7 +203,7 @@ Vector__clear PROC uses ebx, pThis: ptr Vector
     ret
 Vector__clear ENDP
 
-Vector__insert PROC uses ebx ecx edx edi, pThis: ptr Vector, dwIndex: DWORD, dwData: DWORD
+Vector__insert PROC uses ebx ecx edx edi, pThis: ptr Vector, dwIndex: index_t, dwData: elem_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
@@ -218,12 +218,12 @@ Vector__insert PROC uses ebx ecx edx edi, pThis: ptr Vector, dwIndex: DWORD, dwD
     
         mov edx, dwData
         mov edi, [ebx].pData
-        mov eax, [edi + ecx * (sizeof DWORD)]
-        mov DWORD ptr [edi + ecx * (sizeof DWORD)], edx
+        mov eax, [edi + ecx * STL_ELEM_SIZE]
+        mov DWORD ptr [edi + ecx * STL_ELEM_SIZE], edx
         .REPEAT
             inc ecx
-            mov edx, [edi + ecx * (sizeof DWORD)]
-            mov DWORD ptr [edi + ecx * (sizeof DWORD)], eax
+            mov edx, [edi + ecx * STL_ELEM_SIZE]
+            mov DWORD ptr [edi + ecx * STL_ELEM_SIZE], eax
             mov eax, edx
         .UNTIL [ebx].dwSize == ecx
         inc [ebx].dwSize
@@ -233,7 +233,7 @@ Vector__insert PROC uses ebx ecx edx edi, pThis: ptr Vector, dwIndex: DWORD, dwD
     ret
 Vector__insert ENDP
 
-Vector__erase PROC uses ebx ecx edx, pThis: ptr Vector, dwIndex: DWORD
+Vector__erase PROC uses ebx ecx edx, pThis: ptr Vector, dwIndex: index_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
@@ -242,9 +242,9 @@ Vector__erase PROC uses ebx ecx edx, pThis: ptr Vector, dwIndex: DWORD
         mov edx, [ebx].pData
         .REPEAT
             inc ecx
-            mov eax, [edx + ecx * (sizeof DWORD)]
+            mov eax, [edx + ecx * STL_ELEM_SIZE]
             dec ecx
-            mov DWORD ptr [edx + ecx * (sizeof DWORD)], eax
+            mov DWORD ptr [edx + ecx * STL_ELEM_SIZE], eax
             inc ecx
         .UNTIL [ebx].dwSize == ecx
         dec [ebx].dwSize
@@ -254,7 +254,7 @@ Vector__erase PROC uses ebx ecx edx, pThis: ptr Vector, dwIndex: DWORD
     ret
 Vector__erase ENDP
 
-Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
+Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: elem_t
     mov ebx, pThis
     assume ebx: ptr Vector
     
@@ -263,7 +263,7 @@ Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
         mov edx, [ebx].pData
         mov ecx, [ebx].dwSize
         mov eax, dwData
-        mov DWORD ptr [edx + ecx * (sizeof DWORD)], eax
+        mov DWORD ptr [edx + ecx * STL_ELEM_SIZE], eax
         inc [ebx].dwSize
     .ELSE
         mov eax, pThis
@@ -275,7 +275,7 @@ Vector__push_back PROC uses ebx ecx edx, pThis: ptr Vector, dwData: DWORD
             mov edx, [ebx].pData
             mov ecx, [ebx].dwSize
             mov eax, dwData
-            mov DWORD ptr [edx + ecx * (sizeof DWORD)], eax
+            mov DWORD ptr [edx + ecx * STL_ELEM_SIZE], eax
             inc [ebx].dwSize
         .ENDIF
     .ENDIF
@@ -292,10 +292,10 @@ Vector__is_eq PROC uses ebx ecx edx esi edi, pThis: ptr Vector, pVec: ptr Vector
     
     mov ecx, [ebx].dwSize
     .IF [edx].dwSize != ecx
-        mov eax, 0
+        mov eax, FALSE
         ret
     .ELSEIF ecx == 0
-        mov eax, 1
+        mov eax, TRUE
         ret
     .ELSE
         mov ebx, [ebx].pData
@@ -304,16 +304,16 @@ Vector__is_eq PROC uses ebx ecx edx esi edi, pThis: ptr Vector, pVec: ptr Vector
         assume edx: DWORD
         .REPEAT
             dec ecx
-            mov esi, [ebx + ecx * (sizeof DWORD)]
-            mov edi, [edx + ecx * (sizeof DWORD)]
+            mov esi, [ebx + ecx * STL_ELEM_SIZE]
+            mov edi, [edx + ecx * STL_ELEM_SIZE]
             .IF esi != edi
-                mov eax, 0
+                mov eax, FALSE
                 ret
             .ENDIF
         .UNTIL ecx == 0
     .ENDIF
     
-    mov eax, 1              
+    mov eax, TRUE
     
     assume ebx:nothing
     assume edx:nothing
@@ -356,7 +356,7 @@ Vector_New_Empty PROC
 Vector_New_Empty ENDP
 
 PUBLIC Vector_New_Filled
-Vector_New_Filled PROC uses ebx, dwSize: DWORD, dwData: DWORD
+Vector_New_Filled PROC uses ebx, dwSize: size_t, dwData: elem_t
     _Vector_New_constructor_base_start
     
     mov eax, dwSize
@@ -404,8 +404,8 @@ Vector_New_Copy PROC uses ebx ecx edx edi esi, pVec: ptr Vector
     .IF ecx != 0
         .REPEAT
             dec ecx
-            mov eax, [esi + ecx * (sizeof DWORD)]
-            mov DWORD ptr [edi + ecx * (sizeof DWORD)], eax
+            mov eax, [esi + ecx * STL_ELEM_SIZE]
+            mov DWORD ptr [edi + ecx * STL_ELEM_SIZE], eax
         .UNTIL ecx == 0
     .ENDIF
     
